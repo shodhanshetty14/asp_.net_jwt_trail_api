@@ -1,4 +1,5 @@
 ﻿using Jwt_Tutorial.api.Models;
+using Jwt_Tutorial.api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,11 +17,13 @@ namespace Jwt_Tutorial.api.Controllers
     {
         private readonly JwtApiContext _dbcontext;
         private readonly IConfiguration _config;
+        private readonly IEmailService _emailservice;
 
-        public AuthController(JwtApiContext dbcontext, IConfiguration config)
+        public AuthController(JwtApiContext dbcontext, IConfiguration config, IEmailService emailService)
         {
             _dbcontext = dbcontext;
             _config = config;
+            _emailservice = emailService;
         }
 
         [HttpPost("register")]
@@ -89,7 +92,47 @@ namespace Jwt_Tutorial.api.Controllers
 
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordModel data)
+        {
+            var user = await _dbcontext.Users.FirstOrDefaultAsync(e => e.Email == data.email);
+            if(user == null)
+            {
+                return BadRequest("The user does not exists");
+            }
+            var newPass = HelperFunctions.CreatePassword(12);
+
+            var HashNewPass = BCrypt.Net.BCrypt.HashPassword(newPass);
+
+            user.Password = HashNewPass;
+
+            string UserEmail = user.Email;
+            await _dbcontext.SaveChangesAsync();
+
+            await _emailservice.SendEmail(UserEmail, "New Password for login", $"Your New Password is {newPass}");
+            return Ok("New Password has been sent to your Email");
+ 
+        }
+
     }
+
+    public class HelperFunctions
+    {
+        public static string CreatePassword(int length)
+        {
+            const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%";
+            StringBuilder res = new StringBuilder();
+            Random rnd = new Random();
+            while (0 < length--)
+            {
+                res.Append(valid[rnd.Next(valid.Length)]);
+            }
+            return res.ToString();
+        }
+
+
+    }
+
 
     public class RegistrationModel
     {
@@ -103,6 +146,11 @@ namespace Jwt_Tutorial.api.Controllers
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordModel
+    {
+        public string email { get; set; } = string.Empty;
     }
 
 }
