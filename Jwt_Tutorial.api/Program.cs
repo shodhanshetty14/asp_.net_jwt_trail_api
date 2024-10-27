@@ -1,5 +1,6 @@
 
 using Jwt_Tutorial.api.Models;
+using Jwt_Tutorial.api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -19,6 +20,8 @@ namespace Jwt_Tutorial.api
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddTransient<IEmailService, EmailService>();
 
             builder.Services.AddAuthentication(options =>
             {
