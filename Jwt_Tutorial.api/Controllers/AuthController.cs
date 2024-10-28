@@ -50,7 +50,7 @@ namespace Jwt_Tutorial.api.Controllers
             await _dbcontext.Users.AddAsync(NewUser);
             await _dbcontext.SaveChangesAsync();
 
-            return Ok("user created");
+            return Created("user created", NewUser);
         }
 
         [HttpPost("login")]
